@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Savage</title>
+	</head>
+	<body style="margin: 0; background-color: #775c5c">
+		<div id="container"></div>
+	</body>
+	<script type="module" defer>
+		const response = await fetch("http://127.0.0.1:8080/src/player.svg");
+		const svgText = await response.text();
+		const svg = new DOMParser().parseFromString(
+			svgText,
+			"image/svg+xml",
+		).documentElement;
+		document.getElementById("container").appendChild(svg);
+
+		/** @type {{string: NodeListOf<SVGElement>}} */
+		const dom = {
+			colors: svg.querySelectorAll("[id^='colors'] > *"),
+			icons: svg.querySelectorAll("[id^='icons'] > *"),
+			shirt: svg.querySelectorAll("[id^='player'] [id^='shirt']"),
+			pants: svg.querySelectorAll("[id^='player'] [id^='pants']"),
+			socks: svg.querySelectorAll("[id^='player'] [id^='socks']"),
+		};
+
+		let selected = dom.shirt;
+		// Set mouse overs
+		for (const items of [
+			dom.colors,
+			dom.icons,
+			dom.shirt,
+			dom.socks,
+			dom.pants,
+		]) {
+			/** @type {SVGElement} */
+			let item;
+			for (item of items) {
+				item.style["stroke-width"] = 2;
+				item.addEventListener("mouseenter", (event) => {
+					event.target.style.stroke = "silver";
+				});
+				item.addEventListener("mouseleave", (event) => {
+					event.target.style.stroke = "none";
+				});
+				if ([dom.shirt, dom.socks, dom.pants].includes(items)) {
+					item.addEventListener("click", (event) => {
+						selected = item;
+					});
+				}
+			}
+		}
+
+		// set color onClicks
+		for (const colorIcon of dom.colors) {
+			colorIcon.addEventListener("click", (event) => {
+				const color = colorIcon.getAttribute("fill");
+				if ([dom.pants[0], dom.socks[0]].includes(selected)) {
+					selected.setAttribute("fill", color);
+					console.log(selected);
+				}
+			});
+			colorIcon.addEventListener("contextmenu", (event) => {
+				event.preventDefault();
+				colorIcon.getAttribute("fill");
+			});
+		}
+	</script>
+</html>
