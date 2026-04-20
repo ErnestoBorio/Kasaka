@@ -24,7 +24,34 @@
 			socks: svg.querySelectorAll("[id^='player'] [id^='socks']"),
 		};
 
+		const shirtOptions = [...svg.querySelectorAll("#player > #shirt > *")];
+		const shirtOptionsById = Object.fromEntries(
+			shirtOptions.map((shirtOption) => {
+				const shirtId =
+					shirtOption.getAttribute("data-savage-id") || shirtOption.id;
+				return [shirtId, shirtOption];
+			}),
+		);
+
 		let selected = dom.shirt;
+		let selectedShirt = "plain";
+
+		const setSelectedShirt = (shirtId) => {
+			for (const shirtOption of shirtOptions) {
+				shirtOption.style.display = "none";
+			}
+
+			const shirtOption = shirtOptionsById[shirtId];
+			if (!shirtOption) {
+				return;
+			}
+
+			shirtOption.style.display = "inline";
+			selectedShirt = shirtId;
+		};
+
+		setSelectedShirt(selectedShirt);
+
 		// Set mouse overs
 		for (const items of [
 			dom.colors,
@@ -49,6 +76,14 @@
 					});
 				}
 			}
+		}
+
+		for (const shirtIcon of dom.icons) {
+			shirtIcon.addEventListener("click", () => {
+				const shirtId =
+					shirtIcon.getAttribute("data-savage-id") || shirtIcon.id;
+				setSelectedShirt(shirtId);
+			});
 		}
 
 		// set color onClicks
