@@ -13,7 +13,8 @@
 			svgText,
 			"image/svg+xml",
 		).documentElement;
-		document.getElementById("container").appendChild(svg);
+		const container = document.getElementById("container");
+		container.appendChild(svg);
 
 		/** @type {{string: NodeListOf<SVGElement>}} */
 		const dom = {
@@ -32,9 +33,81 @@
 				return [shirtId, shirtOption];
 			}),
 		);
+		const shirtColorSlotsById = Object.fromEntries(
+			shirtOptions.map((shirtOption) => {
+				const shirtId =
+					shirtOption.getAttribute("data-savage-id") || shirtOption.id;
+				const colorElements = [
+					...(shirtOption.matches("[fill]") ? [shirtOption] : []),
+					...shirtOption.querySelectorAll("[fill]"),
+				].filter((element) => element.getAttribute("fill") !== "none");
+				const colorSlots = [];
+				const colorSlotIndexes = new Map();
 
-		let selected = dom.shirt;
+				for (const colorElement of colorElements) {
+					const fill = colorElement.getAttribute("fill");
+					if (!colorSlotIndexes.has(fill)) {
+						colorSlotIndexes.set(fill, colorSlots.length);
+						colorSlots.push([]);
+					}
+					colorSlots[colorSlotIndexes.get(fill)].push(colorElement);
+				}
+
+				return [shirtId, colorSlots];
+			}),
+		);
+
+		let selected = null;
 		let selectedShirt = "plain";
+		let shirtColors = [null, null];
+
+		const selectableItems = [
+			{ type: "shirt", element: dom.shirt[0] },
+			{ type: "socks", element: dom.socks[0] },
+			{ type: "pants", element: dom.pants[0] },
+		];
+
+		const clearSelectionStyles = () => {
+			for (const { element } of selectableItems) {
+				element.style.stroke = "none";
+				element.style["stroke-width"] = 2;
+				element.style["stroke-dasharray"] = "none";
+				element.style["stroke-linecap"] = "butt";
+				element.style.filter = "none";
+			}
+		};
+
+		const applySelectionStyles = (item) => {
+			item.element.style.stroke = "white";
+			item.element.style["stroke-width"] = 5;
+			item.element.style["stroke-dasharray"] = "12 8";
+			item.element.style["stroke-linecap"] = "butt";
+			item.element.style.filter = "drop-shadow(0 0 1px black)";
+		};
+
+		const setSelected = (item) => {
+			selected = item;
+			clearSelectionStyles();
+			if (selected) {
+				applySelectionStyles(selected);
+			}
+		};
+
+		const applyShirtColors = () => {
+			const colorSlots = shirtColorSlotsById[selectedShirt] || [];
+			for (const [index, color] of shirtColors.entries()) {
+				if (color && colorSlots[index]) {
+					for (const colorElement of colorSlots[index]) {
+						colorElement.setAttribute("fill", color);
+					}
+				}
+			}
+		};
+
+		const setShirtColor = (colorIndex, color) => {
+			shirtColors[colorIndex] = color;
+			applyShirtColors();
+		};
 
 		const setSelectedShirt = (shirtId) => {
 			for (const shirtOption of shirtOptions) {
@@ -48,9 +121,19 @@
 
 			shirtOption.style.display = "inline";
 			selectedShirt = shirtId;
+			applyShirtColors();
+			if (selected?.type === "shirt") {
+				applySelectionStyles(selected);
+			}
 		};
 
 		setSelectedShirt(selectedShirt);
+
+		document.body.addEventListener("click", (event) => {
+			if ([document.body, container, svg].includes(event.target)) {
+				setSelected(null);
+			}
+		});
 
 		// Set mouse overs
 		for (const items of [
@@ -65,14 +148,22 @@
 			for (item of items) {
 				item.style["stroke-width"] = 2;
 				item.addEventListener("mouseenter", (event) => {
-					event.target.style.stroke = "silver";
+					if (event.target !== selected?.element) {
+						event.target.style.stroke = "silver";
+					}
 				});
 				item.addEventListener("mouseleave", (event) => {
-					event.target.style.stroke = "none";
+					if (event.target !== selected?.element) {
+						event.target.style.stroke = "none";
+					} else {
+						applySelectionStyles(selected);
+					}
 				});
 				if ([dom.shirt, dom.socks, dom.pants].includes(items)) {
-					item.addEventListener("click", (event) => {
-						selected = item;
+					item.addEventListener("click", () => {
+						setSelected(
+							selectableItems.find(({ element }) => element === item),
+						);
 					});
 				}
 			}
@@ -90,14 +181,21 @@
 		for (const colorIcon of dom.colors) {
 			colorIcon.addEventListener("click", (event) => {
 				const color = colorIcon.getAttribute("fill");
-				if ([dom.pants[0], dom.socks[0]].includes(selected)) {
-					selected.setAttribute("fill", color);
+				if (selected?.type === "shirt") {
+					setShirtColor(0, color);
+					return;
+				}
+				if (["pants", "socks"].includes(selected?.type)) {
+					selected.element.setAttribute("fill", color);
 					console.log(selected);
 				}
 			});
 			colorIcon.addEventListener("contextmenu", (event) => {
 				event.preventDefault();
-				colorIcon.getAttribute("fill");
+				const color = colorIcon.getAttribute("fill");
+				if (selected?.type === "shirt") {
+					setShirtColor(1, color);
+				}
 			});
 		}
 	</script>
