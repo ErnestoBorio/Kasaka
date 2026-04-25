@@ -13,7 +13,9 @@
 				background: #efefef;
 				color: #151515;
 				cursor: pointer;
-				font: 600 14px system-ui, sans-serif;
+				font:
+					600 14px system-ui,
+					sans-serif;
 				padding: 10px 14px;
 			}
 
@@ -26,7 +28,9 @@
 				right: 10px;
 				bottom: 8px;
 				color: #000000;
-				font: 11px system-ui, sans-serif;
+				font:
+					11px system-ui,
+					sans-serif;
 			}
 		</style>
 	</head>
@@ -36,7 +40,9 @@
 		<div id="version-label">v0.1</div>
 	</body>
 	<script type="module" defer>
-		const response = await fetch("http://127.0.0.1:8080/src/player.svg");
+		const response = await fetch(
+			new URL("/src/player.svg", window.location.origin),
+		);
 		const svgText = await response.text();
 		const svg = new DOMParser().parseFromString(
 			svgText,
@@ -208,9 +214,12 @@
 				applySelectionStyles(selected);
 			}
 
-			const svgBlob = new Blob([new XMLSerializer().serializeToString(exportSvg)], {
-				type: "image/svg+xml;charset=utf-8",
-			});
+			const svgBlob = new Blob(
+				[new XMLSerializer().serializeToString(exportSvg)],
+				{
+					type: "image/svg+xml;charset=utf-8",
+				},
+			);
 			const svgUrl = URL.createObjectURL(svgBlob);
 			const image = new Image();
 
